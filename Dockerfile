@@ -5,12 +5,12 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy application files
 COPY . .
 
-RUN npm run build
+RUN npm run build --prod
 
 # Production stage
 FROM node:alpine
@@ -22,8 +22,9 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/build ./build
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm install -omit=dev
 
+ENV NODE_ENV=production
 EXPOSE 3000
 
 # Start the application

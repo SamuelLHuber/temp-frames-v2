@@ -14,6 +14,8 @@ RUN npm install -omit=dev
 # Copy the rest of the application code to the working directory
 COPY . .
 
+# install REMIX
+RUN npm install -g @remix-run/dev
 # Build the Next.js application
 RUN npm run build --prod
 

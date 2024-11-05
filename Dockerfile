@@ -1,26 +1,30 @@
-# Use the latest official Node.js Alpine image as a base
-FROM node:alpine
+# Build stage
+FROM node:alpine AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock) to the working directory
-COPY package.json ./
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci
 
-# Install dependencies
-ENV NODE_ENV=production
-RUN npm install -omit=dev
-
-# Copy the rest of the application code to the working directory
+# Copy application files
 COPY . .
 
-# install REMIX
-RUN npm install -g @remix-run/dev
-# Build the Next.js application
-RUN npm run build --prod
+RUN npm run build
 
-# Expose the port the app runs on
-EXPOSE 5173
+# Production stage
+FROM node:alpine
 
-# Command to run the application
+WORKDIR /app
+
+# Copy only necessary files from builder
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/build ./build
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+EXPOSE 3000
+
+# Start the application
 CMD ["npm", "start"]

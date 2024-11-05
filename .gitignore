@@ -1,0 +1,11 @@
+node_modules/*
+node_modules
+
+/.cache
+/build
+.env
+.vercel
+
+credentials.json
+
+*.DS_Store

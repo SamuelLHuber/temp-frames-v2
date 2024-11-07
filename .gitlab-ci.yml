@@ -15,12 +15,15 @@ docker_image_build_push:
   services:
     - docker:dind
   script:
-    - docker build -t $DOCKER_IMAGE:$CI_COMMIT_REF_NAME -f Dockerfile .
-    - docker push $DOCKER_IMAGE:$CI_COMMIT_REF_NAME
     - |
       if [ "$CI_COMMIT_REF_NAME" = "master" ]; then
+        docker build -t $DOCKER_IMAGE:$CI_COMMIT_REF_NAME -f Dockerfile .
         docker tag $DOCKER_IMAGE:$CI_COMMIT_REF_NAME $DOCKER_IMAGE:latest
-        docker push $DOCKER_IMAGE:latest
+        docker push $DOCKER_IMAGE --all-tags
+      else
+        docker build -t $DOCKER_IMAGE:$CI_COMMIT_REF_NAME -f Dockerfile .
+        docker tag $DOCKER_IMAGE:$CI_COMMIT_REF_NAME
+        docker push $DOCKER_IMAGE --all-tags
       fi
   # enable to filter changes to specific paths only e.g. app if you have an api as well
   # this enables you to build and push only when the source code relevant to the image changes

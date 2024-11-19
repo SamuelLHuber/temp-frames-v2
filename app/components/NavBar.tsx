@@ -30,8 +30,12 @@ export function Navbar({ user }: NavbarProps) {
   // also uncomment the <Link> component below
   // make sure the /second-page route matches pages you have setup in your routes
   // const isSecondPage = location.pathname === "/second-page";
+  const isIndex = location.pathname === "/";
 
+  console.log("Navbar user", user);
   return (
+    // don't render navbar when we are on the landing page
+    // isIndex && !user ? null : ( wrap this around the full section below)
     <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200/30 dark:border-gray-700/30 bg-background-light dark:bg-background-dark">
       <div className="flex items-center gap-4">
         <Link to="/" className="flex items-center">

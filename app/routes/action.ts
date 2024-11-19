@@ -20,7 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
 export async function loader() {
   return json({
     type: "composer",
-    name: "dTech Mini App Template",
+    name: "dTech Mini App",
     icon: "check", // supported list: https://docs.farcaster.xyz/reference/actions/spec#valid-icons
     description: "dTech Mini App Template",
     aboutUrl: process.env.PUBLIC_URL,

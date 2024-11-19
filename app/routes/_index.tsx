@@ -148,9 +148,22 @@ export default function Index() {
               <span className="text-white text-2xl">✓</span>
             </div>
             <h2 className="text-2xl font-bold mb-4">Thank you!</h2>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Your deposit has been processed successfully.
             </p>
+            <button
+              onClick={() => {
+                // Add share functionality here
+                navigator.share?.({
+                  title: "My Morpho Deposit",
+                  text: "I just made a deposit on Morpho!",
+                  url: window.location.href,
+                });
+              }}
+              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              Share
+            </button>
           </div>
         )}
       </div>

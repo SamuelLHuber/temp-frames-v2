@@ -7,10 +7,15 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import type { LinksFunction, LoaderFunction } from "@remix-run/node";
-import { authenticator, FarcasterUser } from "~/lib/auth.server";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider } from "wagmi";
 
-import "./tailwind.css";
+const queryClient = new QueryClient()
+import { config } from "./wagmi";
+
+import { authenticator, FarcasterUser } from "~/lib/auth.server";
 import { fromFarcasterTime, validateFrameSignature } from "./lib/farcaster";
+import "./tailwind.css";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -80,7 +85,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+        </WagmiProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

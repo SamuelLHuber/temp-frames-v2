@@ -1,49 +1,73 @@
-import type { MetaFunction } from "@remix-run/node";
 import clsx from "clsx";
-import { useState } from "react";
-import { useRootLoaderData } from "~/hooks/useRootLoaderData";
+import sdk, { type FrameContext } from "@farcaster/frame-sdk";
+import { useEffect, useCallback, useState } from "react";
+import { ClientOnly } from "remix-utils/client-only";
+import {
+  useAccount,
+  useSendTransaction,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+
 
 // Step type definition
 type Step = "token" | "vault" | "amount" | "confirmation";
 
-export const loader = async () => {
-  const actionUrl = encodeURIComponent(`${process.env.PUBLIC_URL}/action`);
-  const deepLink = `https://warpcast.com/~/composer-action?url=${actionUrl}`;
-  const imageUrl = `${process.env.PUBLIC_URL}/icon.png`;
-  return {
-    actionUrl,
-    deepLink,
-    imageUrl,
-  };
-};
-
-export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  const title = "Morpho Deposit";
-  return [
-    { title: title },
-    { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-    { rel: "manifest", href: "/manifest.json" },
-    { name: "theme-color", content: "#7C65C1" },
-    { name: "description", content: "Deposit to Morpho Vaults" },
-
-    { property: "og:title", content: title },
-    { property: "og:image", content: data?.imageUrl },
-    { property: "fc:frame", content: "vNext" },
-    { property: "fc:frame:image", content: data?.imageUrl },
-    { property: "fc:frame:image:aspect_ratio", content: "1:1" },
-    { property: "fc:frame:button:1", content: "Deposit" },
-    { property: "fc:frame:button:1:action", content: "link" },
-    { property: "fc:frame:button:1:target", content: data?.deepLink },
-  ];
-};
-
 export default function Index() {
-  const { user } = useRootLoaderData();
-  const [currentStep, setCurrentStep] = useState<Step>("token");
-  const [selectedToken, setSelectedToken] = useState<"ETH" | "USDC" | null>(
-    null
+  return (
+    <ClientOnly fallback={<div>Loading...</div>}>
+      {() => <App />}
+    </ClientOnly>
   );
+}
+
+function App() {
+  const [currentStep, setCurrentStep] = useState<Step>("token");
+  const [selectedToken, setSelectedToken] = useState<"ETH" | "USDC" | null>(null);
   const [selectedVault, setSelectedVault] = useState<number | null>(null);
+
+  const { address, isConnected } = useAccount();
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  const [context, setContext] = useState<FrameContext>();
+  const [isContextOpen, setIsContextOpen] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const {
+    sendTransaction,
+    error: sendTxError,
+    isError: isSendTxError,
+    isPending: isSendTxPending,
+  } = useSendTransaction();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({
+      hash: txHash as `0x${string}`,
+    });
+
+  useEffect(() => {
+    const load = async () => {
+      setContext(await sdk.context);
+      sdk.actions.ready();
+    };
+    if (sdk && !isSDKLoaded) {
+      setIsSDKLoaded(true);
+      load();
+    }
+  }, [isSDKLoaded]);
+
+  const handleDeposit = useCallback(() => {
+    sendTransaction(
+      {
+        to: "0x4bBFD120d9f352A0BEd7a014bd67913a2007a878",
+        data: "0x9846cd9efc000023c0",
+      },
+      {
+        onSuccess: (hash) => {
+          setTxHash(hash);
+          setCurrentStep("confirmation");
+        },
+      }
+    );
+  }, [sendTransaction]);
 
   const steps = [
     { id: "token", label: "Select Token" },
@@ -79,7 +103,6 @@ export default function Index() {
             ))}
           </div>
 
-          {/* Content based on current step */}
           <div className="max-w-6xl mx-auto">
             {currentStep === "token" && (
               <div className="flex flex-col items-center gap-4">
@@ -91,6 +114,7 @@ export default function Index() {
                       setCurrentStep("vault");
                     }}
                     className="px-8 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg"
+                    disabled={!isConnected}
                   >
                     ETH
                   </button>
@@ -100,10 +124,14 @@ export default function Index() {
                       setCurrentStep("vault");
                     }}
                     className="px-8 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg"
+                    disabled={!isConnected}
                   >
                     USDC
                   </button>
                 </div>
+                {!isConnected && (
+                  <p className="text-red-500">Please connect your wallet first</p>
+                )}
               </div>
             )}
 
@@ -134,11 +162,15 @@ export default function Index() {
                 <div className="w-full max-w-2xl p-8 bg-gray-100 dark:bg-gray-800 rounded-xl">
                   <div className="h-96 animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg" />
                   <button
-                    onClick={() => setCurrentStep("confirmation")}
-                    className="w-full mt-8 px-8 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg"
+                    onClick={handleDeposit}
+                    disabled={isSendTxPending}
+                    className="w-full mt-8 px-8 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-lg disabled:bg-gray-400"
                   >
-                    Deposit
+                    {isSendTxPending ? "Processing..." : "Deposit"}
                   </button>
+                  {isSendTxError && (
+                    <div className="text-red-500 mt-2">{sendTxError?.message}</div>
+                  )}
                 </div>
               </div>
             )}
@@ -150,8 +182,17 @@ export default function Index() {
                 </div>
                 <h2 className="text-2xl font-bold mb-4">Thank you!</h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Your deposit has been processed successfully.
+                  {isConfirming
+                    ? "Transaction is being confirmed..."
+                    : isConfirmed
+                    ? "Your deposit has been confirmed successfully!"
+                    : "Your deposit is being processed."}
                 </p>
+                {txHash && (
+                  <div className="mb-4 font-mono text-sm">
+                    Transaction: {txHash.slice(0, 6)}...{txHash.slice(-4)}
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     navigator.share?.({

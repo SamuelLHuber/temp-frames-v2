@@ -1,6 +1,6 @@
 import clsx from "clsx";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
 import { useEffect, useCallback, useState } from "react";
+// import sdk, { type FrameContext } from "@farcaster/frame-sdk";
 import { ClientOnly } from "remix-utils/client-only";
 import {
   useAccount,
@@ -27,7 +27,7 @@ function App() {
 
   const { address, isConnected } = useAccount();
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
+  // const [context, setContext] = useState<FrameContext>();
   const [isContextOpen, setIsContextOpen] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
 
@@ -43,16 +43,16 @@ function App() {
       hash: txHash as `0x${string}`,
     });
 
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
+  // useEffect(() => {
+  //   const load = async () => {
+  //     setContext(await sdk.context);
+  //     sdk.actions.ready();
+  //   };
+  //   if (sdk && !isSDKLoaded) {
+  //     setIsSDKLoaded(true);
+  //     load();
+  //   }
+  // }, [isSDKLoaded]);
 
   const handleDeposit = useCallback(() => {
     sendTransaction(
